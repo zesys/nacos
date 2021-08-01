@@ -17,9 +17,10 @@
 package com.alibaba.nacos.naming.controllers;
 
 import com.alibaba.nacos.api.common.Constants;
+import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.auth.annotation.Secured;
 import com.alibaba.nacos.auth.common.ActionTypes;
-import com.alibaba.nacos.common.utils.IPUtil;
+import com.alibaba.nacos.common.utils.InternetAddressUtil;
 import com.alibaba.nacos.common.utils.JacksonUtils;
 import com.alibaba.nacos.core.cluster.Member;
 import com.alibaba.nacos.core.cluster.NodeState;
@@ -57,7 +58,8 @@ import java.util.List;
  * @author nkorange
  */
 @RestController
-@RequestMapping({UtilsAndCommons.NACOS_NAMING_CONTEXT + "/operator", UtilsAndCommons.NACOS_NAMING_CONTEXT + "/ops"})
+@RequestMapping({UtilsAndCommons.NACOS_NAMING_CONTEXT + UtilsAndCommons.NACOS_NAMING_OPERATOR_CONTEXT,
+        UtilsAndCommons.NACOS_NAMING_CONTEXT + "/ops"})
 public class OperatorController {
     
     private final SwitchManager switchManager;
@@ -183,11 +185,11 @@ public class OperatorController {
     @GetMapping("/distro/server")
     public ObjectNode getResponsibleServer4Service(
             @RequestParam(defaultValue = Constants.DEFAULT_NAMESPACE_ID) String namespaceId,
-            @RequestParam String serviceName) {
+            @RequestParam String serviceName) throws NacosException {
         Service service = serviceManager.getService(namespaceId, serviceName);
-        if (service == null) {
-            throw new IllegalArgumentException("service not found");
-        }
+        
+        serviceManager.checkServiceIsNull(service, namespaceId, serviceName);
+        
         ObjectNode result = JacksonUtils.createEmptyJsonNode();
         result.put("responsibleServer", distroMapper.mapSrv(serviceName));
         return result;
@@ -196,7 +198,7 @@ public class OperatorController {
     @GetMapping("/distro/client")
     public ObjectNode getResponsibleServer4Client(@RequestParam String ip, @RequestParam String port) {
         ObjectNode result = JacksonUtils.createEmptyJsonNode();
-        String tag = ip + IPUtil.IP_PORT_SPLITER + port;
+        String tag = ip + InternetAddressUtil.IP_PORT_SPLITER + port;
         result.put("responsibleServer", distroMapper.mapSrv(tag));
         return result;
     }

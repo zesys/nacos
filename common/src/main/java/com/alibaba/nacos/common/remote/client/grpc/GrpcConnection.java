@@ -33,7 +33,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.grpc.ManagedChannel;
 import io.grpc.stub.StreamObserver;
-import org.checkerframework.checker.nullness.compatqual.NullableDecl;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.Executor;
@@ -71,15 +71,14 @@ public class GrpcConnection extends Connection {
     public Response request(Request request, long timeouts) throws NacosException {
         Payload grpcRequest = GrpcUtils.convert(request);
         ListenableFuture<Payload> requestFuture = grpcFutureServiceStub.request(grpcRequest);
-        Payload grpcResponse = null;
+        Payload grpcResponse;
         try {
             grpcResponse = requestFuture.get(timeouts, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             throw new NacosException(NacosException.SERVER_ERROR, e);
         }
-        
-        Response response = (Response) GrpcUtils.parse(grpcResponse);
-        return response;
+    
+        return (Response) GrpcUtils.parse(grpcResponse);
     }
     
     @Override
@@ -134,7 +133,7 @@ public class GrpcConnection extends Connection {
         //set callback .
         Futures.addCallback(requestFuture, new FutureCallback<Payload>() {
             @Override
-            public void onSuccess(@NullableDecl Payload grpcResponse) {
+            public void onSuccess(@Nullable Payload grpcResponse) {
                 Response response = (Response) GrpcUtils.parse(grpcResponse);
                 
                 if (response != null) {

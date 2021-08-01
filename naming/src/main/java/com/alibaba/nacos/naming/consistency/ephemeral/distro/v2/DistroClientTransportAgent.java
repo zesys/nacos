@@ -26,6 +26,7 @@ import com.alibaba.nacos.core.cluster.Member;
 import com.alibaba.nacos.core.cluster.NodeState;
 import com.alibaba.nacos.core.cluster.ServerMemberManager;
 import com.alibaba.nacos.core.cluster.remote.ClusterRpcClientProxy;
+import com.alibaba.nacos.core.distributed.distro.DistroConfig;
 import com.alibaba.nacos.core.distributed.distro.component.DistroCallback;
 import com.alibaba.nacos.core.distributed.distro.component.DistroTransportAgent;
 import com.alibaba.nacos.core.distributed.distro.entity.DistroData;
@@ -86,6 +87,7 @@ public class DistroClientTransportAgent implements DistroTransportAgent {
     public void syncData(DistroData data, String targetServer, DistroCallback callback) {
         if (isNoExistTarget(targetServer)) {
             callback.onSuccess();
+            return;
         }
         DistroDataRequest request = new DistroDataRequest(data, data.getType());
         Member member = memberManager.find(targetServer);
@@ -122,6 +124,7 @@ public class DistroClientTransportAgent implements DistroTransportAgent {
     public void syncVerifyData(DistroData verifyData, String targetServer, DistroCallback callback) {
         if (isNoExistTarget(targetServer)) {
             callback.onSuccess();
+            return;
         }
         DistroDataRequest request = new DistroDataRequest(verifyData, DataOperation.VERIFY);
         Member member = memberManager.find(targetServer);
@@ -214,8 +217,7 @@ public class DistroClientTransportAgent implements DistroTransportAgent {
         
         @Override
         public long getTimeout() {
-            // TODO timeout can be configured.
-            return 3000L;
+            return DistroConfig.getInstance().getSyncTimeoutMillis();
         }
         
         @Override
@@ -260,8 +262,7 @@ public class DistroClientTransportAgent implements DistroTransportAgent {
         
         @Override
         public long getTimeout() {
-            // TODO timeout can be configured.
-            return 3000L;
+            return DistroConfig.getInstance().getVerifyTimeoutMillis();
         }
         
         @Override

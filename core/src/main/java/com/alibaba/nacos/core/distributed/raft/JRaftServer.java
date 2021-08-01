@@ -19,7 +19,7 @@ package com.alibaba.nacos.core.distributed.raft;
 import com.alibaba.nacos.common.JustForTest;
 import com.alibaba.nacos.common.model.RestResult;
 import com.alibaba.nacos.common.utils.ConvertUtils;
-import com.alibaba.nacos.common.utils.IPUtil;
+import com.alibaba.nacos.common.utils.InternetAddressUtil;
 import com.alibaba.nacos.common.utils.LoggerUtils;
 import com.alibaba.nacos.common.utils.ThreadUtils;
 import com.alibaba.nacos.consistency.RequestProcessor;
@@ -165,7 +165,7 @@ public class JRaftServer {
         RaftExecutor.init(config);
         
         final String self = config.getSelfMember();
-        String[] info = IPUtil.splitIPPortStr(self);
+        String[] info = InternetAddressUtil.splitIPPortStr(self);
         selfIp = info[0];
         selfPort = Integer.parseInt(info[1]);
         localPeerId = PeerId.parsePeer(self);
@@ -220,7 +220,7 @@ public class JRaftServer {
                 createMultiRaftGroup(processors);
                 Loggers.RAFT.info("========= The raft protocol start finished... =========");
             } catch (Exception e) {
-                Loggers.RAFT.error("raft protocol start failure, error : {}", e);
+                Loggers.RAFT.error("raft protocol start failure, cause: ", e);
                 throw new JRaftException(e);
             }
         }
@@ -412,7 +412,7 @@ public class JRaftServer {
             
             Loggers.RAFT.info("========= The raft protocol has been closed =========");
         } catch (Throwable t) {
-            Loggers.RAFT.error("There was an error in the raft protocol shutdown, error : {}", t);
+            Loggers.RAFT.error("There was an error in the raft protocol shutdown, cause: ", t);
         }
     }
     

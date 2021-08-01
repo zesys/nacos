@@ -49,6 +49,8 @@ import static com.alibaba.nacos.client.utils.LogUtils.NAMING_LOGGER;
  */
 public class BeatReactor implements Closeable {
     
+    private static final String CLIENT_BEAT_INTERVAL_FIELD = "clientBeatInterval";
+    
     private final ScheduledExecutorService executorService;
     
     private final NamingHttpClientProxy serverProxy;
@@ -93,7 +95,7 @@ public class BeatReactor implements Closeable {
     public void addBeatInfo(String serviceName, BeatInfo beatInfo) {
         NAMING_LOGGER.info("[BEAT] adding beat: {} to beat map.", beatInfo);
         String key = buildKey(serviceName, beatInfo.getIp(), beatInfo.getPort());
-        BeatInfo existBeat = null;
+        BeatInfo existBeat;
         //fix #1733
         if ((existBeat = dom2Beat.remove(key)) != null) {
             existBeat.setStopped(true);
@@ -178,7 +180,7 @@ public class BeatReactor implements Closeable {
             long nextTime = beatInfo.getPeriod();
             try {
                 JsonNode result = serverProxy.sendBeat(beatInfo, BeatReactor.this.lightBeatEnabled);
-                long interval = result.get("clientBeatInterval").asLong();
+                long interval = result.get(CLIENT_BEAT_INTERVAL_FIELD).asLong();
                 boolean lightBeatEnabled = false;
                 if (result.has(CommonParams.LIGHT_BEAT_ENABLED)) {
                     lightBeatEnabled = result.get(CommonParams.LIGHT_BEAT_ENABLED).asBoolean();
@@ -210,9 +212,13 @@ public class BeatReactor implements Closeable {
             } catch (NacosException ex) {
                 NAMING_LOGGER.error("[CLIENT-BEAT] failed to send beat: {}, code: {}, msg: {}",
                         JacksonUtils.toJson(beatInfo), ex.getErrCode(), ex.getErrMsg());
-                
+    
+            } catch (Exception unknownEx) {
+                NAMING_LOGGER.error("[CLIENT-BEAT] failed to send beat: {}, unknown exception msg: {}",
+                        JacksonUtils.toJson(beatInfo), unknownEx.getMessage(), unknownEx);
+            } finally {
+                executorService.schedule(new BeatTask(beatInfo), nextTime, TimeUnit.MILLISECONDS);
             }
-            executorService.schedule(new BeatTask(beatInfo), nextTime, TimeUnit.MILLISECONDS);
         }
     }
 }

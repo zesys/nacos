@@ -25,13 +25,14 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.Executor;
 
 public class CacheDataTest {
     
     @Test
     public void testConstructorAndEquals() {
-        ConfigFilterChainManager filter = new ConfigFilterChainManager();
+        ConfigFilterChainManager filter = new ConfigFilterChainManager(new Properties());
         final CacheData cacheData1 = new CacheData(filter, "name1", "key", "group", "tenant");
         Assert.assertEquals("CacheData [key, group]", cacheData1.toString());
         
@@ -45,7 +46,7 @@ public class CacheDataTest {
     
     @Test
     public void testGetter() {
-        ConfigFilterChainManager filter = new ConfigFilterChainManager();
+        ConfigFilterChainManager filter = new ConfigFilterChainManager(new Properties());
         final CacheData cacheData1 = new CacheData(filter, "name1", "key", "group", "tenant");
         
         Assert.assertTrue(cacheData1.isInitializing());
@@ -53,7 +54,7 @@ public class CacheDataTest {
         Assert.assertEquals(0, cacheData1.getTaskId());
         Assert.assertFalse(cacheData1.isSyncWithServer());
         Assert.assertFalse(cacheData1.isUseLocalConfigInfo());
-        Assert.assertEquals(0, cacheData1.getLastModifiedTs());
+        Assert.assertEquals(0, cacheData1.getLastModifiedTs().intValue());
         Assert.assertEquals(0, cacheData1.getLocalConfigInfoVersion());
         
         cacheData1.setInitializing(false);
@@ -75,13 +76,13 @@ public class CacheDataTest {
         //TODO FIX getType
         // Assert.assertFalse("123",cacheData1.getType());
         Assert.assertTrue(cacheData1.isUseLocalConfigInfo());
-        Assert.assertEquals(timeStamp, cacheData1.getLastModifiedTs());
+        Assert.assertEquals(timeStamp, cacheData1.getLastModifiedTs().longValue());
         Assert.assertEquals(timeStamp, cacheData1.getLocalConfigInfoVersion());
     }
     
     @Test
     public void testListener() {
-        ConfigFilterChainManager filter = new ConfigFilterChainManager();
+        ConfigFilterChainManager filter = new ConfigFilterChainManager(new Properties());
         final CacheData cacheData1 = new CacheData(filter, "name1", "key", "group", "tenant");
         
         Listener listener = new Listener() {
@@ -105,7 +106,7 @@ public class CacheDataTest {
     
     @Test
     public void testCheckListenerMd5() {
-        ConfigFilterChainManager filter = new ConfigFilterChainManager();
+        ConfigFilterChainManager filter = new ConfigFilterChainManager(new Properties());
         final CacheData data = new CacheData(filter, "name1", "key", "group", "tenant");
         final List<String> list = new ArrayList<>();
         Listener listener = new Listener() {

@@ -23,6 +23,7 @@ import com.alibaba.nacos.common.utils.ConcurrentHashSet;
 import com.alibaba.nacos.naming.core.v2.client.Client;
 import com.alibaba.nacos.naming.core.v2.event.client.ClientEvent;
 import com.alibaba.nacos.naming.core.v2.event.client.ClientOperationEvent;
+import com.alibaba.nacos.naming.core.v2.event.publisher.NamingEventPublisherFactory;
 import com.alibaba.nacos.naming.core.v2.event.service.ServiceEvent;
 import com.alibaba.nacos.naming.core.v2.pojo.Service;
 import org.springframework.stereotype.Component;
@@ -47,7 +48,7 @@ public class ClientServiceIndexesManager extends SmartSubscriber {
     private final ConcurrentMap<Service, Set<String>> subscriberIndexes = new ConcurrentHashMap<>();
     
     public ClientServiceIndexesManager() {
-        NotifyCenter.registerSubscriber(this);
+        NotifyCenter.registerSubscriber(this, NamingEventPublisherFactory.getInstance());
     }
     
     public Collection<String> getAllClientsRegisteredService(Service service) {
@@ -133,8 +134,10 @@ public class ClientServiceIndexesManager extends SmartSubscriber {
     
     private void addSubscriberIndexes(Service service, String clientId) {
         subscriberIndexes.computeIfAbsent(service, (key) -> new ConcurrentHashSet<>());
-        subscriberIndexes.get(service).add(clientId);
-        NotifyCenter.publishEvent(new ServiceEvent.ServiceSubscribedEvent(service, clientId));
+        // Fix #5404, Only first time add need notify event.
+        if (subscriberIndexes.get(service).add(clientId)) {
+            NotifyCenter.publishEvent(new ServiceEvent.ServiceSubscribedEvent(service, clientId));
+        }
     }
     
     private void removeSubscriberIndexes(Service service, String clientId) {

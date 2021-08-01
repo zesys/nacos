@@ -20,6 +20,7 @@ const I18N_CONF = {
     docs: 'DOCS',
     blog: 'BLOG',
     community: 'COMMUNITY',
+    enterprise: 'ENTERPRISE EDITION',
     languageSwitchButton: '中',
     logout: 'logout',
     changePassword: 'modify password',
@@ -119,6 +120,7 @@ const I18N_CONF = {
     prompt: 'Confirm',
     promptDelete: 'Do you want to delete the service?',
     create: 'Create Service',
+    subscriber: 'Subscriber',
   },
   SubscriberList: {
     subscriberList: 'Subscriber List',
@@ -141,6 +143,10 @@ const I18N_CONF = {
     pubNoData: 'No results found.',
     nodeState: 'NodeState',
     extendInfo: 'NodeMetaData',
+    operation: 'Operation',
+    leave: 'Leave',
+    confirm: 'Confirm',
+    confirmTxt: 'Confirm that you want to go offline this cluster node?',
   },
   EditClusterDialog: {
     updateCluster: 'Update Cluster',
@@ -243,6 +249,7 @@ const I18N_CONF = {
     home: 'Application:',
     actionType: 'Action Type:',
     operator: 'Operator:',
+    sourceIp: 'Source IP',
     configureContent: 'Configuration Content:',
     back: 'Back',
   },
@@ -251,6 +258,7 @@ const I18N_CONF = {
     viewDetails1: 'view details',
   },
   ConfigurationManagement: {
+    exportBtn: 'Export',
     questionnaire2: 'questionnaire',
     ad:
       'a ACM front-end monitoring questionnaire, the time limit to receive Ali cloud voucher details shoved stamp: the',
@@ -284,6 +292,7 @@ const I18N_CONF = {
     application: 'Application',
     operation: 'Operation',
     export: 'Export query results',
+    newExport: 'New version export query results',
     import: 'Import',
     uploadBtn: 'Upload File',
     importSucc: 'The import was successful',
@@ -309,6 +318,7 @@ const I18N_CONF = {
     unrecognizedEntries: 'Unrecognized entries',
     skippedEntries: 'skipped entries',
     exportSelected: 'Export selected configs',
+    newExportSelected: 'New version export selected configs',
     clone: 'Clone',
     exportSelectedAlertTitle: 'Export config',
     exportSelectedAlertContent: 'please select the configuration to export',
@@ -536,6 +546,7 @@ const I18N_CONF = {
     rollbackDelete: 'Delete',
     update: 'Update',
     insert: 'Insert',
+    additionalRollbackMessage: 'This operation will delete the below config!',
   },
   UserManagement: {
     userManagement: 'User Management',

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 1999-2018 Alibaba Group Holding Ltd.
+  ~ Copyright 1999-2021 Alibaba Group Holding Ltd.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -88,7 +88,7 @@
     </issueManagement>
     
     <properties>
-        <revision>2.0.0</revision>
+        <revision>2.1.0-SNAPSHOT</revision>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <!-- Compiler settings properties -->
@@ -121,7 +121,7 @@
         <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
         <maven-failsafe-plugin.version>2.19.1</maven-failsafe-plugin.version>
         <maven-assembly-plugin.version>3.0.0</maven-assembly-plugin.version>
-        <maven-checkstyle-plugin.version>3.1.1</maven-checkstyle-plugin.version>
+        <maven-checkstyle-plugin.version>3.1.2</maven-checkstyle-plugin.version>
         <maven-flatten-version>1.1.0</maven-flatten-version>
         <!-- dependency version related to plugin -->
         <extra-enforcer-rules.version>1.0-beta-4</extra-enforcer-rules.version>
@@ -130,8 +130,7 @@
         <!-- dependency version -->
         <spring-boot-dependencies.version>2.1.17.RELEASE</spring-boot-dependencies.version>
         <servlet-api.version>3.0</servlet-api.version>
-        <commons-lang3.version>3.4</commons-lang3.version>
-        <commons-io.version>2.2</commons-io.version>
+        <commons-io.version>2.7</commons-io.version>
         <commons-collections.version>3.2.2</commons-collections.version>
         <commons-logging.version>1.2</commons-logging.version>
         <commons-dbcp.version>1.4</commons-dbcp.version>
@@ -152,7 +151,7 @@
         <jjwt.version>0.11.2</jjwt.version>
         <netty-all.version>4.1.59.Final</netty-all.version>
         <mina-core.version>2.0.0-RC1</mina-core.version>
-        <guava.version>24.1.1-jre</guava.version>
+        <guava.version>30.1-jre</guava.version>
         <javatuples.version>1.2</javatuples.version>
         <commonOkHttp.version>0.4.1</commonOkHttp.version>
         <grpc-java.version>1.24.0</grpc-java.version>
@@ -278,6 +277,9 @@
                         <exclude>**/istio/model/naming/*.java</exclude>
                         <exclude>**/istio/model/*.java</exclude>
                         <exclude>**/api/grpc/auto/*.java</exclude>
+                        <exclude>**/istio/mcp/**</exclude>
+                        <exclude>**/istio/networking/**</exclude>
+                        <exclude>**/google/protobuf/**</exclude>
                     </excludes>
                 </configuration>
                 <executions>
@@ -305,7 +307,7 @@
                     <encoding>UTF-8</encoding>
                     <consoleOutput>true</consoleOutput>
                     <failsOnError>true</failsOnError>
-                    <excludes>**/istio/model/**,**/consistency/entity/**,**/nacos/test/**,**/api/grpc/auto/**</excludes>
+                    <excludes>**/consistency/entity/**,**/nacos/test/**,**/api/grpc/auto/**,**/istio/**,**/protobuf/**</excludes>
                 </configuration>
                 <executions>
                     <execution>
@@ -341,6 +343,8 @@
                         <exclude>**/*.txt</exclude>
                         <exclude>**/*.factories</exclude>
                         <exclude>/console-ui/**</exclude>
+                        <exclude>**/gogo.proto</exclude>
+                        <exclude>**/any.proto</exclude>
                     </excludes>
                 </configuration>
                 <executions>
@@ -407,11 +411,6 @@
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven-surefire-plugin.version}</version>
-                <configuration>
-                    <forkCount>1</forkCount>
-                    <reuseForks>true</reuseForks>
-                    <testFailureIgnore>true</testFailureIgnore>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -526,50 +525,34 @@
             <build>
                 <plugins>
                     <plugin>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <version>${maven-failsafe-plugin.version}</version>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>${maven-surefire-plugin.version}</version>
                         <configuration>
-                            <argLine>@{failsafeArgLine}</argLine>
-                            <argLine>-Dnacos.standalone=true</argLine>
+                            <testFailureIgnore>false</testFailureIgnore>
                             <includes>
                                 <include>**/*CITCase.java</include>
                             </includes>
                         </configuration>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>integration-test</goal>
-                                    <goal>verify</goal>
-                                </goals>
-                            </execution>
-                        </executions>
                     </plugin>
                 </plugins>
             </build>
         </profile>
         <profile>
             <!--  Run integration tests for all modules separately  -->
-            <id>it-test</id>
+            <id>nit-test</id>
             <build>
                 <plugins>
                     <plugin>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <version>${maven-failsafe-plugin.version}</version>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>${maven-surefire-plugin.version}</version>
                         <configuration>
-                            <argLine>@{failsafeArgLine}</argLine>
-                            <argLine>-Dnacos.standalone=true</argLine>
+                            <testFailureIgnore>false</testFailureIgnore>
                             <includes>
-                                <include>**/*ITCase.java</include>
+                                <include>**/naming/*ITCase.java</include>
                             </includes>
                         </configuration>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>integration-test</goal>
-                                    <goal>verify</goal>
-                                </goals>
-                            </execution>
-                        </executions>
                     </plugin>
                 </plugins>
             </build>
@@ -642,6 +625,11 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-inline</artifactId>
             <scope>test</scope>
         </dependency>
     
@@ -765,12 +753,6 @@
             </dependency>
             
             <!-- Apache commons -->
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>${commons-lang3.version}</version>
-            </dependency>
-            
             <dependency>
                 <groupId>commons-io</groupId>
                 <artifactId>commons-io</artifactId>
@@ -1006,6 +988,12 @@
                 <type>pom</type>
             </dependency>
             <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-testing</artifactId>
+                <version>${grpc-java.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
                 <groupId>com.google.api.grpc</groupId>
                 <artifactId>proto-google-common-protos</artifactId>
                 <version>${proto-google-common-protos.version}</version>
@@ -1033,6 +1021,12 @@
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
+                <version>${mockito-core.version}</version>
+            </dependency>
+            
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-inline</artifactId>
                 <version>${mockito-core.version}</version>
             </dependency>
             
@@ -1073,6 +1067,7 @@
             <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
     </distributionManagement>
+
 
 </project>
 

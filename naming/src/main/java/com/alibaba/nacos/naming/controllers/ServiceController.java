@@ -44,8 +44,8 @@ import com.alibaba.nacos.naming.selector.Selector;
 import com.alibaba.nacos.naming.web.NamingResourceParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
+import com.alibaba.nacos.common.utils.StringUtils;
+import com.alibaba.nacos.common.utils.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -69,7 +69,7 @@ import java.util.Set;
  * @author nkorange
  */
 @RestController
-@RequestMapping(UtilsAndCommons.NACOS_NAMING_CONTEXT + "/service")
+@RequestMapping(UtilsAndCommons.NACOS_NAMING_CONTEXT + UtilsAndCommons.NACOS_NAMING_SERVICE_CONTEXT)
 public class ServiceController {
     
     @Autowired
@@ -301,15 +301,13 @@ public class ServiceController {
      */
     @PutMapping("/checksum")
     @Deprecated
-    public ObjectNode checksum(HttpServletRequest request) throws Exception {
+    public ObjectNode checksum(HttpServletRequest request) throws NacosException {
         
         String namespaceId = WebUtils.optional(request, CommonParams.NAMESPACE_ID, Constants.DEFAULT_NAMESPACE_ID);
         String serviceName = WebUtils.required(request, CommonParams.SERVICE_NAME);
         Service service = serviceManager.getService(namespaceId, serviceName);
         
-        if (service == null) {
-            throw new NacosException(NacosException.NOT_FOUND, "serviceName not found: " + serviceName);
-        }
+        serviceManager.checkServiceIsNull(service, namespaceId, serviceName);
         
         service.recalculateChecksum();
         
@@ -330,8 +328,8 @@ public class ServiceController {
     @Secured(parser = NamingResourceParser.class, action = ActionTypes.READ)
     public ObjectNode subscribers(HttpServletRequest request) {
         
-        int pageNo = NumberUtils.toInt(WebUtils.required(request, "pageNo"));
-        int pageSize = NumberUtils.toInt(WebUtils.required(request, "pageSize"));
+        int pageNo = NumberUtils.toInt(WebUtils.optional(request, "pageNo", "1"));
+        int pageSize = NumberUtils.toInt(WebUtils.optional(request, "pageSize", "1000"));
         
         String namespaceId = WebUtils.optional(request, CommonParams.NAMESPACE_ID, Constants.DEFAULT_NAMESPACE_ID);
         String serviceName = WebUtils.required(request, CommonParams.SERVICE_NAME);

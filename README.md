@@ -55,7 +55,7 @@ sh startup.sh -m standalone
 
 On the **Windows** platform, run the following command to start server with standalone mode.  Alternatively, you can also double-click the `startup.cmd` to run NacosServer.
 ```
-cmd startup.cmd -m standalone
+startup.cmd -m standalone
 ```
 
 For more details, see [quick-start.](https://nacos.io/en-us/docs/quick-start.html)
@@ -99,7 +99,7 @@ Contributors are welcomed to join Nacos project. Please check [CONTRIBUTING](./C
      * commits-nacos@googlegroups.com: Commits notice, very high frequency.
 * Join us from DingDing(Group 1: 21708933(full), Group 2: 30438813). 
 
- ![Nacos](https://img.alicdn.com/tfs/TB1TBKEzpP7gK0jSZFjXXc5aXXa-199-220.png)
+ ![Nacos](https://nacos.io/img/nacos_dingding.jpg)
 
 ## Download
 
@@ -175,5 +175,6 @@ These are only part of the companies using Nacos, for reference only. If you are
 ![天阙](https://img.alicdn.com/tfs/TB1rNq4EwHqK1RjSZFgXXa7JXXa-200-200.jpg)
 ![联合永道](https://img.alicdn.com/tfs/TB1CRAxDxYaK1RjSZFnXXa80pXa-190-190.jpg)
 ![明源云](https://img.alicdn.com/tfs/TB1.q14ErrpK1RjSZTEXXcWAVXa-219-219.jpg)
+![三诺生物](http://www.sinocare.com/public/static/images/logored6000321.png)
 
 

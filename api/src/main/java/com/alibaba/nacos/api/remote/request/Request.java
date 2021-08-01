@@ -16,8 +16,8 @@
 
 package com.alibaba.nacos.api.remote.request;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Request.
@@ -27,7 +27,7 @@ import java.util.Map;
 @SuppressWarnings("PMD.AbstractClassShouldStartWithAbstractNamingRule")
 public abstract class Request {
     
-    private final Map<String, String> headers = new HashMap<String, String>();
+    private final Map<String, String> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     
     private String requestId;
     
@@ -64,7 +64,7 @@ public abstract class Request {
     }
     
     /**
-     * get a header value of defaut value.
+     * get a header value of default value.
      *
      * @param key          key of value.
      * @param defaultValue default value if key is not exist.

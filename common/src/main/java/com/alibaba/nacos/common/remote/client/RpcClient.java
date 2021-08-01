@@ -89,7 +89,7 @@ public abstract class RpcClient implements Closeable {
     protected ClientAbilities clientAbilities;
     
     /**
-     * default keep alive time 10s.
+     * default keep alive time 5s.
      */
     private long keepAliveTime = 5000L;
     
@@ -176,7 +176,6 @@ public abstract class RpcClient implements Closeable {
         this.keepAliveTime = keepAliveTime * timeUnit.toMillis(keepAliveTime);
         LoggerUtils.printIfInfoEnabled(LOGGER, "[{}]RpcClient init keepalive time, keepAliveTimeMillis={}", name,
                 keepAliveTime);
-        
         return this;
     }
     
@@ -244,6 +243,29 @@ public abstract class RpcClient implements Closeable {
     }
     
     /**
+     * check if current connected server is in serverlist ,if not switch server.
+     */
+    public void onServerListChange() {
+        if (currentConnection != null && currentConnection.serverInfo != null) {
+            ServerInfo serverInfo = currentConnection.serverInfo;
+            boolean found = false;
+            for (String serverAddress : serverListFactory.getServerList()) {
+                if (resolveServerInfo(serverAddress).getAddress().equalsIgnoreCase(serverInfo.getAddress())) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                LoggerUtils.printIfInfoEnabled(LOGGER,
+                        "Current connected server {}  is not in latest server list,switch switchServerAsync",
+                        serverInfo.getAddress());
+                switchServerAsync();
+            }
+            
+        }
+    }
+    
+    /**
      * Start this client.
      */
     public final void start() throws NacosException {
@@ -267,7 +289,7 @@ public abstract class RpcClient implements Closeable {
         clientEventExecutor.submit(new Runnable() {
             @Override
             public void run() {
-                while (true) {
+                while (!clientEventExecutor.isTerminated() && !clientEventExecutor.isShutdown()) {
                     ConnectionEvent take = null;
                     try {
                         take = eventLinkedBlockingQueue.take();
@@ -288,6 +310,9 @@ public abstract class RpcClient implements Closeable {
             public void run() {
                 while (true) {
                     try {
+                        if (isShutdown()) {
+                            break;
+                        }
                         ReconnectContext reconnectContext = reconnectionSignal
                                 .poll(keepAliveTime, TimeUnit.MILLISECONDS);
                         if (reconnectContext == null) {
@@ -301,8 +326,19 @@ public abstract class RpcClient implements Closeable {
                                     LoggerUtils.printIfInfoEnabled(LOGGER,
                                             "[{}]Server healthy check fail,currentConnection={}", name,
                                             currentConnection.getConnectionId());
-                                    rpcClientStatus.set(RpcClientStatus.UNHEALTHY);
-                                    reconnectContext = new ReconnectContext(null, false);
+                                    
+                                    RpcClientStatus rpcClientStatus = RpcClient.this.rpcClientStatus.get();
+                                    if (RpcClientStatus.SHUTDOWN.equals(rpcClientStatus)) {
+                                        break;
+                                    }
+                                    
+                                    boolean success = RpcClient.this.rpcClientStatus
+                                            .compareAndSet(rpcClientStatus, RpcClientStatus.UNHEALTHY);
+                                    if (success) {
+                                        reconnectContext = new ReconnectContext(null, false);
+                                    } else {
+                                        continue;
+                                    }
                                     
                                 } else {
                                     lastActiveTimeStamp = System.currentTimeMillis();
@@ -387,18 +423,6 @@ public abstract class RpcClient implements Closeable {
                 return null;
             }
         });
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                try {
-                    RpcClient.this.shutdown();
-                } catch (NacosException e) {
-                    LoggerUtils.printIfErrorEnabled(LOGGER, "[{}]RpcClient shutdown exception, errorMessage ={}", name,
-                            e.getMessage());
-                }
-                
-            }
-        });
         
     }
     
@@ -434,8 +458,11 @@ public abstract class RpcClient implements Closeable {
     
     @Override
     public void shutdown() throws NacosException {
-        clientEventExecutor.shutdown();
+        LOGGER.info("Shutdown rpc client ,set status to shutdown");
         rpcClientStatus.set(RpcClientStatus.SHUTDOWN);
+        LOGGER.info("Shutdown  client event executor " + clientEventExecutor);
+        clientEventExecutor.shutdownNow();
+        LOGGER.info("Close current connection " + currentConnection.getConnectionId());
         closeConnection(currentConnection);
     }
     
@@ -447,7 +474,7 @@ public abstract class RpcClient implements Closeable {
         try {
             Response response = this.currentConnection.request(healthCheckRequest, 3000L);
             //not only check server is ok ,also check connection is register.
-            return response == null ? false : response.isSuccess();
+            return response != null && response.isSuccess();
         } catch (NacosException e) {
             //ignore
         }
@@ -622,7 +649,7 @@ public abstract class RpcClient implements Closeable {
         while (retryTimes < RETRY_TIMES && System.currentTimeMillis() < timeoutMills + start) {
             boolean waitReconnect = false;
             try {
-                if (this.currentConnection == null) {
+                if (this.currentConnection == null || !isRunning()) {
                     waitReconnect = true;
                     throw new NacosException(NacosException.CLIENT_DISCONNECT,
                             "Client not connected,current status:" + rpcClientStatus.get());
@@ -636,6 +663,9 @@ public abstract class RpcClient implements Closeable {
                         synchronized (this) {
                             waitReconnect = true;
                             if (rpcClientStatus.compareAndSet(RpcClientStatus.RUNNING, RpcClientStatus.UNHEALTHY)) {
+                                LoggerUtils.printIfErrorEnabled(LOGGER,
+                                        "Connection is unregistered, switch server,connectionId={},request={}",
+                                        currentConnection.getConnectionId(), request.getClass().getSimpleName());
                                 switchServerAsync();
                             }
                         }
@@ -675,7 +705,7 @@ public abstract class RpcClient implements Closeable {
             throw (exceptionThrow instanceof NacosException) ? (NacosException) exceptionThrow
                     : new NacosException(SERVER_ERROR, exceptionThrow);
         } else {
-            throw new NacosException(SERVER_ERROR, "Request fail,Unknown Error");
+            throw new NacosException(SERVER_ERROR, "Request fail, unknown Error");
         }
     }
     
@@ -692,12 +722,11 @@ public abstract class RpcClient implements Closeable {
         while (retryTimes < RETRY_TIMES && System.currentTimeMillis() < start + callback.getTimeout()) {
             boolean waitReconnect = false;
             try {
-                if (this.currentConnection == null) {
+                if (this.currentConnection == null || !isRunning()) {
                     waitReconnect = true;
                     throw new NacosException(NacosException.CLIENT_INVALID_PARAM, "Client not connected.");
                 }
                 this.currentConnection.asyncRequest(request, callback);
-                lastActiveTimeStamp = System.currentTimeMillis();
                 return;
             } catch (Exception e) {
                 if (waitReconnect) {
@@ -746,9 +775,7 @@ public abstract class RpcClient implements Closeable {
                     waitReconnect = true;
                     throw new NacosException(NacosException.CLIENT_INVALID_PARAM, "Client not connected.");
                 }
-                RequestFuture requestFuture = this.currentConnection.requestFuture(request);
-                lastActiveTimeStamp = System.currentTimeMillis();
-                return requestFuture;
+                return this.currentConnection.requestFuture(request);
             } catch (Exception e) {
                 if (waitReconnect) {
                     try {
@@ -887,20 +914,20 @@ public abstract class RpcClient implements Closeable {
     @SuppressWarnings("PMD.UndefineMagicConstantRule")
     private ServerInfo resolveServerInfo(String serverAddress) {
         String property = System.getProperty("nacos.server.port", "8848");
-        int serverPort = Integer.valueOf(property);
+        int serverPort = Integer.parseInt(property);
         ServerInfo serverInfo = null;
         if (serverAddress.contains(Constants.HTTP_PREFIX)) {
             String[] split = serverAddress.split(Constants.COLON);
             String serverIp = split[1].replaceAll("//", "");
             if (split.length > 2 && StringUtils.isNotBlank(split[2])) {
-                serverPort = Integer.valueOf(split[2]);
+                serverPort = Integer.parseInt(split[2]);
             }
             serverInfo = new ServerInfo(serverIp, serverPort);
         } else {
             String[] split = serverAddress.split(Constants.COLON);
             String serverIp = split[0];
             if (split.length > 1 && StringUtils.isNotBlank(split[1])) {
-                serverPort = Integer.valueOf(split[1]);
+                serverPort = Integer.parseInt(split[1]);
             }
             serverInfo = new ServerInfo(serverIp, serverPort);
         }
@@ -925,7 +952,7 @@ public abstract class RpcClient implements Closeable {
         /**
          * get address, ip:port.
          *
-         * @return
+         * @return address.
          */
         public String getAddress() {
             return serverIp + Constants.COLON + serverPort;

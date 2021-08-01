@@ -50,6 +50,14 @@ import static com.alibaba.nacos.client.utils.LogUtils.NAMING_LOGGER;
  */
 public class ServiceInfoHolder implements Closeable {
     
+    private static final String JM_SNAPSHOT_PATH_PROPERTY = "JM.SNAPSHOT.PATH";
+    
+    private static final String FILE_PATH_NACOS = "nacos";
+    
+    private static final String FILE_PATH_NAMING = "naming";
+    
+    private static final String USER_HOME_PROPERTY = "user.home";
+    
     private final ConcurrentMap<String, ServiceInfo> serviceInfoMap;
     
     private final FailoverReactor failoverReactor;
@@ -59,7 +67,7 @@ public class ServiceInfoHolder implements Closeable {
     private String cacheDir;
     
     public ServiceInfoHolder(String namespace, Properties properties) {
-        initCacheDir(namespace);
+        initCacheDir(namespace, properties);
         if (isLoadCacheAtStart(properties)) {
             this.serviceInfoMap = new ConcurrentHashMap<String, ServiceInfo>(DiskCache.read(this.cacheDir));
         } else {
@@ -69,14 +77,20 @@ public class ServiceInfoHolder implements Closeable {
         this.pushEmptyProtection = isPushEmptyProtect(properties);
     }
     
-    private void initCacheDir(String namespace) {
-        String jmSnapshotPath = System.getProperty("JM.SNAPSHOT.PATH");
+    private void initCacheDir(String namespace, Properties properties) {
+        String jmSnapshotPath = System.getProperty(JM_SNAPSHOT_PATH_PROPERTY);
+    
+        String namingCacheRegistryDir = "";
+        if (properties.getProperty(PropertyKeyConst.NAMING_CACHE_REGISTRY_DIR) != null) {
+            namingCacheRegistryDir = File.separator + properties.getProperty(PropertyKeyConst.NAMING_CACHE_REGISTRY_DIR);
+        }
+        
         if (!StringUtils.isBlank(jmSnapshotPath)) {
-            cacheDir =
-                    jmSnapshotPath + File.separator + "nacos" + File.separator + "naming" + File.separator + namespace;
+            cacheDir = jmSnapshotPath + File.separator + FILE_PATH_NACOS + namingCacheRegistryDir
+                    + File.separator + FILE_PATH_NAMING + File.separator + namespace;
         } else {
-            cacheDir = System.getProperty("user.home") + File.separator + "nacos" + File.separator + "naming"
-                    + File.separator + namespace;
+            cacheDir = System.getProperty(USER_HOME_PROPERTY) + File.separator + FILE_PATH_NACOS + namingCacheRegistryDir
+                    + File.separator + FILE_PATH_NAMING + File.separator + namespace;
         }
     }
     
